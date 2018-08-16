@@ -1,0 +1,7 @@
+run_id: 0
+runtime_directory: test_runtime_directory
+user: csep
+log_file: test_log_file.log
+execution_datetime: 2018-01-012018-01-01
+archive_directory: test_archive_directory
+
