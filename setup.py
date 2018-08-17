@@ -5,7 +5,7 @@ setup(
     version='0.1.0-dev',
     author='William Savran',
     author_email='wsavran@usc.edu',
-    packages=['csep', 'csep.test'],
+    packages=['csep'],
     license='LICENSE',
     description='Collaboratory for the Study of Earthquake Predictibility',
 )
