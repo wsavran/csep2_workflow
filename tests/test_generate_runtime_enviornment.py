@@ -1,7 +1,7 @@
 import unittest
 import tempfile
 import os
-from csep.environment import generate_runtime_environment
+from csep.core.environment import generate_local_airflow_environment_test
 
 class TestGenerateRuntimeEnvironment(unittest.TestCase):
     """
@@ -20,17 +20,13 @@ class TestGenerateRuntimeEnvironment(unittest.TestCase):
         """ Verifies configuration template generated properly. """
         with tempfile.TemporaryDirectory() as tmp_dir:
             experiment_dir = os.path.join(tmp_dir, self.experiment_name)
-            runtime_dir = os.path.join(experiment_dir, self.unique_dir)
-            archive_dir = os.path.join(experiment_dir, 'results', self.run_id) 
 
-            generate_runtime_environment(experiment_name=self.experiment_name, 
-                    experiment_dir=experiment_dir,
-                    ts=self.execution_runtime, 
-                    run_id=self.run_id, 
-                    unique_rundir=runtime_dir)
+            config = generate_local_airflow_environment_test(experiment_name=self.experiment_name, 
+                     experiment_dir=experiment_dir,
+                     ts=self.execution_runtime, 
+                     run_id=self.run_id)
 
-
-            with open(os.path.join(runtime_dir, 'run_config.txt'), 'r') as f:
+            with open(os.path.join(config['runtime_dir'], 'run_config.txt'), 'r') as f:
                 config_file = f.readlines()
     
             template_lines = list(map(lambda x: x.strip(), config_file))
@@ -40,8 +36,7 @@ class TestGenerateRuntimeEnvironment(unittest.TestCase):
                 'experiment_name: {}'.format(self.experiment_name),
                 'execution_runtime: {}'.format(self.execution_runtime),
                 'experiment_directory: {}'.format(experiment_dir),
-                'runtime_directory: {}'.format(runtime_dir),
-                'archive_directory: {}'.format(archive_dir)
+                'runtime_directory: {}'.format(config['runtime_dir']),
                 ]
 
             self.assertCountEqual(template_lines, test_lines)
@@ -52,16 +47,11 @@ class TestGenerateRuntimeEnvironment(unittest.TestCase):
         # set up temp directories. here assuming tmp_dir is the experiment directory
         with tempfile.TemporaryDirectory() as tmp_dir:
             experiment_dir = os.path.join(tmp_dir, self.experiment_name)
-            runtime_dir = os.path.join(experiment_dir, self.unique_dir)
-            archive_dir = os.path.join(experiment_dir, 'results', self.run_id) 
 
-            generate_runtime_environment(experiment_name=self.experiment_name, 
-                    experiment_dir=experiment_dir,
-                    ts=self.execution_runtime, 
-                    run_id=self.run_id, 
-                    unique_rundir=runtime_dir)
+            config = generate_local_airflow_environment_test(experiment_name=self.experiment_name, 
+                     experiment_dir=experiment_dir,
+                     ts=self.execution_runtime, 
+                     run_id=self.run_id)
 
-
-            self.assertTrue(os.path.isdir(runtime_dir))
-            self.assertTrue(os.path.isdir(archive_dir))
+            self.assertTrue(os.path.isdir(config['runtime_dir']))
 
