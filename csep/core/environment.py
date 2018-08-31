@@ -2,6 +2,8 @@ import os
 import uuid
 import string
 import datetime
+import logging
+
 
 def generate_local_airflow_environment_test(*args, **kwargs):
     """
@@ -19,48 +21,43 @@ def generate_local_airflow_environment_test(*args, **kwargs):
     :param **kwargs: contains context passed to function my airflow
     type **kwargs: dict
     """
-    config_mapping = {}
+    config = {}
     csep_home = os.environ['CSEP_DEV']
 
     # parse from airflow context
-    # this should likely all exist in a key-value store that spans the lifetime of the run-time
-    try:
-        runtime = kwargs['ts']
-    except:
-        runtime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    try:
-        run_id = kwargs['run_id']
-    except:
-        run_id = uuid.uuid4().hex
-    try:
-        experiment_name = kwargs['experiment_name']
-    except:
-        experiment_name = run_id
-    try:
-        experiment_dir = kwargs['experiment_dir']
-    except:
-        experiment_dir = os.path.join(csep_home, experiment_name)
+    runtime = kwargs.pop('ts', datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S"))
+    runtime = runtime.replace(":", "-")
+    experiment_name = kwargs.pop('experiment_name', 'unknown')
+    experiment_dir = kwargs.pop('experiment_dir', os.path.join(csep_home, experiment_name))
+    run_id = '__'.join([experiment_name, runtime])
+
+    logging.info('Configuring local run-time environment for run_id: {}.'.format(run_id))
 
     # generate filepath for unique runtime
     run_dir = os.path.join(experiment_dir, 'runs', run_id)
 
     # updates to configuration file
-    config_mapping['run_id'] = run_id
-    config_mapping['experiment_name'] = experiment_name
-    config_mapping['experiment_dir'] = experiment_dir
-    config_mapping['execution_runtime'] = runtime
-    config_mapping['runtime_dir'] = run_dir
+    config['run_id'] = run_id
+    config['experiment_name'] = experiment_name
+    config['experiment_dir'] = experiment_dir
+    config['execution_runtime'] = runtime
+    config['runtime_dir'] = run_dir
 
+    # write configuration to logging
+    logging.info(config)
+    
     # make necessary directories 
-    os.makedirs(config_mapping['experiment_dir'])
-    os.makedirs(config_mapping['runtime_dir'])
+    os.makedirs(config['experiment_dir'], exist_ok=True)
+    # runtime directory should be unique
+    os.makedirs(config['runtime_dir'])
     
     # get values for config mapping
     fp = os.path.dirname(os.path.realpath(__file__))
     with open(os.path.join(fp, '../artifacts/runtime_config.tmpl'), 'r') as template_file:
         template = string.Template(template_file.read())
 
-    with open(os.path.join(config_mapping['runtime_dir'], 'run_config.txt'), 'w') as config_file:
-        config_file.writelines(template.substitute(config_mapping))
+    with open(os.path.join(config['runtime_dir'], 'run_config.txt'), 'w') as config_file:
+        config_file.writelines(template.substitute(config))
     
-    return config_mapping
+    # push information back to airflow scheduler by returning
+    return config
